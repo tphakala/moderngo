@@ -2,6 +2,72 @@
 
 Custom ruleguard rules for modernizing Go code to use Go 1.20+ through Go 1.25+ features.
 
+## Usage with golangci-lint v2
+
+### Installation
+
+```bash
+# Recommended: binary installation
+curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.8.0
+```
+
+> **Note:** `go install` is not recommended as it may produce unreliable builds. See the [official installation docs](https://golangci-lint.run/docs/welcome/install/local/) for details.
+
+### Quick Start
+
+1. Clone or copy the rules to your project:
+   ```bash
+   git clone https://github.com/yourorg/moderngo.git
+   # Or copy the rules/ directory to your project
+   ```
+
+2. Add to your `.golangci.yml`:
+   ```yaml
+   version: "2"
+   linters:
+     enable:
+       - gocritic
+   linters-settings:
+     gocritic:
+       enabled-checks:
+         - ruleguard
+       settings:
+         ruleguard:
+           rules:
+             - rules/*.go
+   ```
+
+3. Run the linter:
+   ```bash
+   golangci-lint run ./...
+   ```
+
+### Clearing Cache After Rule Changes
+
+When you modify rules, clear the cache to ensure changes take effect:
+
+```bash
+golangci-lint cache clean && golangci-lint run ./...
+```
+
+### Running Specific Rules
+
+To run only moderngo rules (via gocritic/ruleguard):
+
+```bash
+golangci-lint run --enable-only gocritic ./...
+```
+
+### Example Output
+
+```
+main.go:15:2: ruleguard: suggestion: use slices.Sort instead of sort.Ints (gocritic)
+main.go:23:5: ruleguard: suggestion: use time.DateTime constant instead of "2006-01-02 15:04:05" (gocritic)
+main.go:31:2: ruleguard: suggestion: use range over int (Go 1.22+) (gocritic)
+```
+
+---
+
 ## File Organization
 
 Rules are organized by **package/topic** rather than Go version for easier maintenance.
