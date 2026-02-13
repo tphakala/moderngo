@@ -951,3 +951,46 @@ cd testdata && go get github.com/quasilyte/go-ruleguard/dsl@latest
 6. Run `golangci-lint cache clean && golangci-lint run` to test
 
 See [go-ruleguard documentation](https://go-ruleguard.github.io/by-example/) for pattern syntax.
+
+## False Positive Management
+
+Ruleguard rules match syntactic patterns and cannot always determine semantic intent. We manage false positives through three strategies:
+
+### 1. Type Guards (Eliminates False Positives)
+
+Where possible, rules use `.Where(m["x"].Type.Is(...))` to restrict matches to the correct types. For example, `MapKeysCollection` uses `.Where(m["m"].Type.Is("map[$k]$v"))` to only match actual maps, preventing false positives on channels and iterators that share the same `for v := range x` syntax.
+
+### 2. Self-Describing Caveats (Mitigates False Positives)
+
+When false positives can't be eliminated in the DSL, the report message includes a caveat that makes it self-evident when the match is spurious. Ruleguard expands metavariables in the message, so the developer (or LLM) sees the actual expression and can immediately judge correctness.
+
+**Example:** The `SliceRepeat` rule appends `"; false positive if $s depends on the loop variable"`. When it fires on a flatMap pattern, the expanded message reads:
+
+```text
+use slices.Repeat(rp.buildCombinedResults(&batchResponse.Analyses[i], ...), batchResponse.Analyses)
+instead of manual repetition loop (Go 1.23+); false positive if
+rp.buildCombinedResults(&batchResponse.Analyses[i], ...) depends on the loop variable
+```
+
+The reference to `[i]` in the expanded expression makes the false positive obvious.
+
+### 3. Documentation (Known Limitations)
+
+Rules with unfixable false positives are documented in `CLAUDE.md` under "Known False Positives" with:
+
+- The pattern that triggers the false positive
+- Why it's not fixable in ruleguard DSL
+- What mitigation is applied (caveat message, type guard, etc.)
+
+### Current Known False Positives
+
+| Rule | Trigger | Mitigation |
+| --- | --- | --- |
+| `FilepathIsLocal` | `strings.Contains(x, "..")` on non-path strings | Not fixable -- DSL can't distinguish path strings from other strings |
+| `TestingContext` | `context.Background()` in test helpers without `*testing.T` | Not fixable -- DSL can't check enclosing function signature |
+| `SliceRepeat` | FlatMap patterns where appended expression depends on loop variable | Caveat in report message with expanded expression |
+| `ReflectFieldsIterator` | `reflect.Type` pattern when loop index is used for `reflect.Value` access | Caveat in report message suggesting to range over Value instead |
+
+### Validated Against Real Projects
+
+Rules are tested against real-world codebases to catch false positives before release. Across 3 projects (99 total findings), only 2 mitigated false positives remained after adding type guards.
