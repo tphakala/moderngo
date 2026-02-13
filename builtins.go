@@ -165,3 +165,34 @@ func AppendWithoutValues(m dsl.Matcher) {
 	).
 		Report("append with single argument has no effect; did you forget the values to append?")
 }
+
+// NewWithExpression detects the slice-literal hack for getting a pointer to a value
+// and suggests using Go 1.26's enhanced new() built-in.
+//
+// Old pattern (slice hack):
+//
+//	field := &[]string{"hello"}[0]
+//	field := &[]int{42}[0]
+//	field := &[]time.Duration{5 * time.Second}[0]
+//
+// New pattern (Go 1.26+):
+//
+//	field := new("hello")
+//	field := new(42)
+//	field := new(5 * time.Second)
+//
+// Benefits:
+//   - Eliminates the obscure slice-literal-index hack
+//   - Clearer intent: "pointer to this value"
+//   - No intermediate slice allocation
+//   - Works with any expression, including function calls
+//
+// See: https://go.dev/doc/go1.26#language
+func NewWithExpression(m dsl.Matcher) {
+	// Pattern: &[]T{v}[0] - the well-known slice hack for pointer-to-value
+	m.Match(
+		`&[]$typ{$val}[0]`,
+	).
+		Report("use new($val) instead of &[]$typ{$val}[0] (Go 1.26+)").
+		Suggest("new($val)")
+}

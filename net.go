@@ -69,6 +69,48 @@ func FilepathIsLocal(m dsl.Matcher) {
 		Report("consider using filepath.IsLocal($path) for comprehensive path validation (Go 1.20+)")
 }
 
+// DeprecatedReverseProxyDirector detects usage of httputil.ReverseProxy's
+// deprecated Director field and suggests using Rewrite instead.
+//
+// Deprecated pattern:
+//
+//	proxy := &httputil.ReverseProxy{
+//	    Director: func(req *http.Request) {
+//	        req.URL.Scheme = "https"
+//	        req.URL.Host = "backend:8080"
+//	    },
+//	}
+//
+// New pattern (Go 1.26+):
+//
+//	proxy := &httputil.ReverseProxy{
+//	    Rewrite: func(r *httputil.ProxyRequest) {
+//	        r.SetURL(targetURL)
+//	        r.SetXForwarded()
+//	    },
+//	}
+//
+// Security issue: When using Director, a malicious client can send a request
+// that designates security headers (e.g., X-Forwarded-For) as hop-by-hop
+// headers via the Connection header. The proxy strips hop-by-hop headers
+// AFTER Director runs, effectively removing headers that Director set.
+// Rewrite does not have this vulnerability because it operates on a copy
+// of the request where hop-by-hop headers have already been removed.
+//
+// See: https://pkg.go.dev/net/http/httputil#ReverseProxy
+// See: https://pkg.go.dev/net/http/httputil#ProxyRequest
+func DeprecatedReverseProxyDirector(m dsl.Matcher) {
+	m.Match(
+		`httputil.ReverseProxy{$*_, Director: $_, $*_}`,
+	).
+		Report("httputil.ReverseProxy.Director is deprecated in Go 1.26: Director is vulnerable to hop-by-hop header abuse; use Rewrite instead for safe header handling")
+
+	m.Match(
+		`$proxy.Director = $_`,
+	).
+		Report("httputil.ReverseProxy.Director is deprecated in Go 1.26: Director is vulnerable to hop-by-hop header abuse; use Rewrite instead for safe header handling")
+}
+
 // ErrorBeforeUse detects potential nil pointer dereference before error check.
 //
 // Go 1.25 fixed a compiler bug (Go 1.21-1.24) where nil checks were incorrectly delayed.
