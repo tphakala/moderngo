@@ -254,13 +254,13 @@ func SliceRepeat(m dsl.Matcher) {
 	m.Match(
 		`for $i := 0; $i < $n; $i++ { $result = append($result, $s...) }`,
 	).
-		Report("use slices.Repeat($s, $n) instead of manual repetition loop (Go 1.23+)")
+		Report("use slices.Repeat($s, $n) instead of manual repetition loop (Go 1.23+); false positive if $s depends on the loop variable")
 
 	// Pattern: range-over-integer form (with variable)
 	m.Match(
 		`for $i := range $n { $result = append($result, $s...) }`,
 	).
-		Report("use slices.Repeat($s, $n) instead of manual repetition loop (Go 1.23+)")
+		Report("use slices.Repeat($s, $n) instead of manual repetition loop (Go 1.23+); false positive if $s depends on the loop variable")
 
 	// Pattern: range-over-integer form (without variable)
 	m.Match(

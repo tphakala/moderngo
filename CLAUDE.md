@@ -109,6 +109,8 @@ Key v2 differences from v1:
 
 2. **TestingContext** — `context.Background()` in `_test.go` fires even in helper functions that don't have `*testing.T` in scope. Rule only checks filename, not scope. Not fixable via ruleguard DSL (no way to check enclosing function signature).
 
+3. **SliceRepeat** — `for i := range xs { result = append(result, f(xs[i])...) }` fires even when the appended expression depends on the loop variable (flatMap pattern, not repetition). Not fixable via ruleguard DSL (no way to check if `$s` references `$i`). Mitigated: report message now includes "false positive if $s depends on the loop variable" with `$s` expanded, making it obvious to both humans and LLMs when the match is spurious.
+
 ## Known Rule-Ordering Issues
 
 1. **RangeOverInteger vs SliceRepeat** — C-style `for i := 0; i < n; i++ { result = append(result, s...) }` fires RangeOverInteger before SliceRepeat. Users get a two-step path: first convert to `for i := range n`, then SliceRepeat catches it. The `for range n` form is directly caught by SliceRepeat.
