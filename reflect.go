@@ -156,7 +156,7 @@ func ReflectFieldsIterator(m dsl.Matcher) {
 		`for $i := 0; $i < $t.NumField(); $i++ { $*_ }`,
 	).
 		Where(m["t"].Type.Is("reflect.Type")).
-		Report("use range $t.Fields() instead of index-based field iteration (Go 1.26+)")
+		Report("use range $t.Fields() instead of index-based field iteration (Go 1.26+); if the loop index is also used for reflect.Value field access, range over the Value instead")
 
 	// Value.NumField loop
 	m.Match(
@@ -170,7 +170,7 @@ func ReflectFieldsIterator(m dsl.Matcher) {
 		`for $i := range $t.NumField() { $*_ }`,
 	).
 		Where(m["t"].Type.Is("reflect.Type")).
-		Report("use range $t.Fields() instead of range $t.NumField() (Go 1.26+)")
+		Report("use range $t.Fields() instead of range $t.NumField() (Go 1.26+); if the loop index is also used for reflect.Value field access, range over the Value instead")
 
 	m.Match(
 		`for $i := range $v.NumField() { $*_ }`,

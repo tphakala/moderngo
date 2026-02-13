@@ -113,6 +113,17 @@ func checkMapKeysCollection() {
 		upperKeys = append(upperKeys, k+"_suffix")
 	}
 	_ = upperKeys
+
+	// Should NOT trigger: channel drain (not a map)
+	ch := make(chan string, 2)
+	ch <- "x"
+	ch <- "y"
+	close(ch)
+	var chVals []string
+	for v := range ch {
+		chVals = append(chVals, v)
+	}
+	_ = chVals
 }
 
 // --- MapValuesCollection (false-positive-prone) ---
@@ -135,6 +146,14 @@ func checkMapValuesCollection() {
 		}
 	}
 	_ = filtered
+
+	// Should NOT trigger: iterating over a slice (not a map)
+	items := []int{1, 2, 3}
+	var collected []int
+	for _, v := range items {
+		collected = append(collected, v)
+	}
+	_ = collected
 }
 
 // --- SliceRepeat ---

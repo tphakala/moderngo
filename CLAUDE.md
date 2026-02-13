@@ -111,12 +111,16 @@ Key v2 differences from v1:
 
 3. **SliceRepeat** — `for i := range xs { result = append(result, f(xs[i])...) }` fires even when the appended expression depends on the loop variable (flatMap pattern, not repetition). Not fixable via ruleguard DSL (no way to check if `$s` references `$i`). Mitigated: report message now includes "false positive if $s depends on the loop variable" with `$s` expanded, making it obvious to both humans and LLMs when the match is spurious.
 
+4. **ReflectFieldsIterator (Type patterns only)** — `for i := range t.NumField()` where `t` is `reflect.Type` fires even when the loop body uses the index `i` for `reflect.Value.Field(i)` access. `reflect.Type.Fields()` yields only `StructField` (no index), so the developer can't access the corresponding Value field. Not fixable via ruleguard DSL (can't inspect whether loop body uses index for Value access). Mitigated: report message now includes caveat suggesting to range over the Value instead. Note: `reflect.Value` patterns are NOT affected — `Value.Fields()` returns `iter.Seq2[StructField, Value]` which provides both.
+
 ## Known Rule-Ordering Issues
 
 1. **RangeOverInteger vs SliceRepeat** — C-style `for i := 0; i < n; i++ { result = append(result, s...) }` fires RangeOverInteger before SliceRepeat. Users get a two-step path: first convert to `for i := range n`, then SliceRepeat catches it. The `for range n` form is directly caught by SliceRepeat.
 
-### Previously Fixed (this session)
+### Previously Fixed
 
+- **MapKeysCollection on channels/iterators** — Fixed by adding `.Where(m["m"].Type.Is("map[$k]$v"))` type guard. Was firing on channel drains and iterator collection (11 false positives in birdnet-go).
+- **MapValuesCollection on slices** — Fixed by adding `.Where(m["m"].Type.Is("map[$k]$v"))` type guard. Was firing on slice iteration with group-by patterns.
 - **RangeOverInteger vs reflect iterators** — Fixed by adding `.Where(!m["n"].Text.Matches(`\.(NumField|NumMethod|NumIn|NumOut)\(\)$`))` exclusion to RangeOverInteger. Reflect-specific rules now fire directly.
 - **SlicesClone vs BytesClone** — Fixed by reordering BytesClone before SlicesClone in slices.go.
 - **DeprecatedReverseProxyDirector false positive** — Fixed by adding `.Where(m["proxy"].Type.Is("*httputil.ReverseProxy"))` type guard to the assignment pattern.

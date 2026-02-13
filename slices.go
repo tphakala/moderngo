@@ -200,15 +200,18 @@ func BackwardIteration(m dsl.Matcher) {
 func MapKeysCollection(m dsl.Matcher) {
 	// Pattern: for k := range m { keys = append(keys, k) }
 	// This is a common pattern for collecting map keys
+	// Type guard ensures we only match maps, not channels or iterators
 	m.Match(
 		`for $k := range $m { $keys = append($keys, $k) }`,
 	).
+		Where(m["m"].Type.Is("map[$k]$v")).
 		Report("use slices.Collect(maps.Keys($m)) to collect map keys (Go 1.23+)")
 
 	// Pattern with underscore for value: for k, _ := range m
 	m.Match(
 		`for $k, _ := range $m { $keys = append($keys, $k) }`,
 	).
+		Where(m["m"].Type.Is("map[$k]$v")).
 		Report("use slices.Collect(maps.Keys($m)) to collect map keys (Go 1.23+)")
 }
 
@@ -229,9 +232,11 @@ func MapKeysCollection(m dsl.Matcher) {
 // See: https://pkg.go.dev/slices#Collect
 func MapValuesCollection(m dsl.Matcher) {
 	// Pattern: for _, v := range m { values = append(values, v) }
+	// Type guard ensures we only match maps, not slices or other iterables
 	m.Match(
 		`for _, $v := range $m { $values = append($values, $v) }`,
 	).
+		Where(m["m"].Type.Is("map[$k]$v")).
 		Report("use slices.Collect(maps.Values($m)) to collect map values (Go 1.23+)")
 }
 
