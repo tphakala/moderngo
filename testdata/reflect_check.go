@@ -1,6 +1,7 @@
 package testdata
 
 import (
+	"errors"
 	"reflect"
 	"unsafe"
 )
@@ -33,6 +34,9 @@ func checkReflectHeaders() {
 	// Should trigger: SliceHeader literal
 	_ = reflect.SliceHeader{} // want: "reflect.SliceHeader is deprecated"
 
+	// Should trigger: SliceHeader with initialized fields
+	_ = reflect.SliceHeader{Data: 0, Len: 0, Cap: 0} // want: "reflect.SliceHeader is deprecated"
+
 	// Should trigger: StringHeader literal
 	_ = reflect.StringHeader{} // want: "reflect.StringHeader is deprecated"
 
@@ -56,21 +60,20 @@ func checkReflectTypeAssert() {
 	// Should trigger: v.Interface().(T) pattern
 	_ = v.Interface().(string) // want: "reflect.TypeAssert"
 
+	// Should trigger: comma-ok type assertion form
+	_, _ = v.Interface().(string) // want: "reflect.TypeAssert"
+
 	// Should NOT trigger: Interface() without type assertion
 	_ = v.Interface()
 }
 
 // --- ReflectFieldsIterator ---
-// NOTE: The index-based patterns (for i := 0; i < t.NumField(); i++)
-// are caught by RangeOverInteger first, producing "use for i := range t.NumField()"
-// instead of "range t.Fields()". Only the range-over-integer variants
-// properly match the ReflectFieldsIterator rule.
 
 func checkReflectFieldsIterator() {
 	t := reflect.TypeOf(struct{ X int }{})
 
-	// Fires RangeOverInteger (not ReflectFieldsIterator) due to rule ordering
-	for i := 0; i < t.NumField(); i++ { // want: "use for i := range t.NumField()"
+	// Should trigger ReflectFieldsIterator: index-based loop over NumField
+	for i := 0; i < t.NumField(); i++ { // want: "range t.Fields()"
 		_ = t.Field(i)
 	}
 
@@ -81,8 +84,13 @@ func checkReflectFieldsIterator() {
 
 	v := reflect.ValueOf(struct{ X int }{})
 
-	// Fires RangeOverInteger due to rule ordering
-	for i := 0; i < v.NumField(); i++ { // want: "use for i := range v.NumField()"
+	// Should trigger ReflectFieldsIterator: index-based loop over NumField (value)
+	for i := 0; i < v.NumField(); i++ { // want: "range v.Fields()"
+		_ = v.Field(i)
+	}
+
+	// Should trigger ReflectFieldsIterator: range over Value.NumField
+	for i := range v.NumField() { // want: "range v.Fields()"
 		_ = v.Field(i)
 	}
 
@@ -95,14 +103,27 @@ func checkReflectFieldsIterator() {
 func checkReflectMethodsIterator() {
 	t := reflect.TypeOf((*error)(nil)).Elem() // want: "use reflect.TypeFor"
 
-	// Fires RangeOverInteger due to rule ordering
-	for i := 0; i < t.NumMethod(); i++ { // want: "use for i := range t.NumMethod()"
+	// Should trigger ReflectMethodsIterator: index-based loop over NumMethod
+	for i := 0; i < t.NumMethod(); i++ { // want: "range t.Methods()"
 		_ = t.Method(i)
 	}
 
 	// Should trigger ReflectMethodsIterator: range over NumMethod
 	for i := range t.NumMethod() { // want: "range t.Methods()"
 		_ = t.Method(i)
+	}
+
+	// Use a concrete type value to get a reflect.Value with methods
+	v := reflect.ValueOf(errors.New("test"))
+
+	// Should trigger ReflectMethodsIterator: index loop on Value
+	for i := 0; i < v.NumMethod(); i++ { // want: "range v.Methods()"
+		_ = v.Method(i)
+	}
+
+	// Should trigger ReflectMethodsIterator: range over Value.NumMethod
+	for i := range v.NumMethod() { // want: "range v.Methods()"
+		_ = v.Method(i)
 	}
 }
 
@@ -111,13 +132,13 @@ func checkReflectMethodsIterator() {
 func checkReflectInsOutsIterator() {
 	t := reflect.TypeOf(func(int, string) bool { return false })
 
-	// Fires RangeOverInteger due to rule ordering
-	for i := 0; i < t.NumIn(); i++ { // want: "use for i := range t.NumIn()"
+	// Should trigger ReflectInsOutsIterator: index-based loop over NumIn
+	for i := 0; i < t.NumIn(); i++ { // want: "range t.Ins()"
 		_ = t.In(i)
 	}
 
-	// Fires RangeOverInteger due to rule ordering
-	for i := 0; i < t.NumOut(); i++ { // want: "use for i := range t.NumOut()"
+	// Should trigger ReflectInsOutsIterator: index-based loop over NumOut
+	for i := 0; i < t.NumOut(); i++ { // want: "range t.Outs()"
 		_ = t.Out(i)
 	}
 

@@ -23,6 +23,9 @@ func TestArtifactDir(t *testing.T) {
 func TestContextBackground(t *testing.T) {
 	// Should trigger: context.Background() assigned in test
 	ctx := context.Background() // want: "use t.Context() instead of context.Background()"
+
+	// Should trigger: reassignment form (= not :=)
+	ctx = context.Background() // want: "use t.Context() instead of context.Background()"
 	_ = ctx
 
 	// Should trigger: context.TODO() assigned in test
@@ -34,6 +37,9 @@ func TestContextBackground(t *testing.T) {
 func TestContextPassedDirectly(t *testing.T) {
 	// Should trigger: context.Background() passed directly
 	doSomethingWithCtx(context.Background(), "test") // want: "use t.Context() instead of context.Background()"
+
+	// Should trigger: context.TODO() passed directly
+	doSomethingWithCtx(context.TODO(), "test") // want: "use t.Context() instead of context.TODO()"
 	_ = t
 }
 

@@ -46,10 +46,13 @@ func checkBytesClone() {
 	data := []byte("hello")
 
 	// Should trigger: append([]byte(nil), b...)
-	_ = append([]byte(nil), data...) // want: "use slices.Clone"
+	_ = append([]byte(nil), data...) // want: "use bytes.Clone"
 
 	// Should trigger: append([]byte{}, b...)
-	_ = append([]byte{}, data...) // want: "use slices.Clone"
+	_ = append([]byte{}, data...) // want: "use bytes.Clone"
+
+	// Should trigger: append(b[:0:0], b...) with []byte type
+	_ = append(data[:0:0], data...) // want: "use bytes.Clone"
 
 	// Should NOT trigger: append with extra bytes
 	_ = append([]byte{0xFF}, data...)
@@ -140,10 +143,17 @@ func checkSliceRepeat() {
 	s := []int{1, 2, 3}
 	n := 5
 
-	// Should trigger: manual repetition loop
+	// Fires RangeOverInteger first (not SliceRepeat) due to rule ordering
 	var result []int
 	for i := 0; i < n; i++ { // want: "use for i := range n"
 		result = append(result, s...)
 	}
 	_ = result
+
+	// Should trigger: range-over-integer repetition loop
+	var result2 []int
+	for range n { // want: "slices.Repeat"
+		result2 = append(result2, s...)
+	}
+	_ = result2
 }

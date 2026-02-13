@@ -1,6 +1,7 @@
 package testdata
 
 import (
+	"fmt"
 	"log"
 	"time"
 )
@@ -42,6 +43,12 @@ func checkDeferredTimeSince() {
 	// Should trigger: time.Since as second argument
 	defer log.Printf("took %v", time.Since(start)) // want: "time.Since(start) is evaluated at defer time"
 
+	// Should trigger: time.Since as first arg with additional args
+	defer log.Printf("%v %s", time.Since(start), "extra") // want: "time.Since(start) is evaluated at defer time"
+
+	// Should trigger: time.Since as third argument
+	defer fmt.Printf("%s %s %v", "a", "b", time.Since(start)) // want: "time.Since(start) is evaluated at defer time"
+
 	// Should NOT trigger: wrapped in closure (correct pattern)
 	defer func() { log.Println(time.Since(start)) }()
 }
@@ -51,6 +58,9 @@ func checkDeferredTimeSince() {
 func checkDeferredTimeNow() {
 	// Should trigger: time.Now() in defer argument
 	defer log.Println(time.Now()) // want: "time.Now() is evaluated at defer time"
+
+	// Should trigger: time.Now() with preceding arguments
+	defer log.Printf("done at %v", time.Now()) // want: "time.Now() is evaluated at defer time"
 
 	// Should NOT trigger: wrapped in closure (correct pattern)
 	defer func() { log.Println(time.Now()) }()

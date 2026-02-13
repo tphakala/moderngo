@@ -145,7 +145,8 @@ func RangeOverInteger(m dsl.Matcher) {
 		`for $i := 0; $i < $n; $i++ { $*body }`,
 	).
 		Where(
-			!m["n"].Text.Matches(`.*\.N$`), // Exclude b.N (benchmark) patterns
+			!m["n"].Text.Matches(`.*\.N$`) &&
+				!m["n"].Text.Matches(`\.(NumField|NumMethod|NumIn|NumOut)\(\)$`),
 		).
 		Report("use for $i := range $n instead of for $i := 0; $i < $n; $i++ (Go 1.22+)").
 		Suggest("for $i := range $n { $body }")

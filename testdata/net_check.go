@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httputil"
+	"os"
 	"strings"
 )
 
@@ -35,7 +36,7 @@ func checkReverseProxyDirector() {
 	// not just httputil.ReverseProxy. This fires on unrelated types.
 	type Movie struct{ Director string }
 	m := Movie{}
-	m.Director = "Spielberg" // want: "ReverseProxy.Director is deprecated"
+	m.Director = "Spielberg" // Should NOT trigger: not a ReverseProxy
 }
 
 // --- FilepathIsLocal (false-positive-prone) ---
@@ -90,4 +91,16 @@ func checkJoinHostPort(host string, port int) {
 
 	// Should NOT trigger: more than two args
 	_ = fmt.Sprintf("%s:%d (attempt %d)", host, port, 3)
+}
+
+// --- ErrorBeforeUse ---
+
+func checkErrorBeforeUse() {
+	// NOTE: ErrorBeforeUse doesn't fire — ruleguard multi-statement matching limitation
+	f, err := os.Open("test.txt")
+	_ = f.Name()
+	if err != nil {
+		return
+	}
+	_ = f
 }

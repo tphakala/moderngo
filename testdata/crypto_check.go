@@ -28,6 +28,9 @@ func checkWeakRSA() {
 	// Should trigger: 512-bit key
 	_, _ = rsa.GenerateKey(rand.Reader, 512) // want: "RSA keys smaller than 1024"
 
+	// Should trigger: 768-bit key (too small)
+	_, _ = rsa.GenerateKey(rand.Reader, 768) // want: "RSA keys smaller than 1024"
+
 	// Should NOT trigger: adequate key size
 	_, _ = rsa.GenerateKey(rand.Reader, 2048)
 }
