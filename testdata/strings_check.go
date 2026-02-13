@@ -1,12 +1,31 @@
 package testdata
 
-import "strings"
+import (
+	"bytes"
+	"strings"
+)
 
 // --- StringsLinesIteration ---
 
 func checkStringsLines(s string) {
 	// Should trigger: split by \n for iteration
 	for _, line := range strings.Split(s, "\n") { // want: "use for line := range strings.Lines"
+		_ = line
+	}
+
+	// Should trigger: split by \r\n for iteration
+	for _, line := range strings.Split(s, "\r\n") { // want: "use for line := range strings.Lines"
+		_ = line
+	}
+
+	// Should trigger: bytes.Split by \n for iteration
+	bs := []byte(s)
+	for _, line := range bytes.Split(bs, []byte("\n")) { // want: "use for line := range bytes.Lines"
+		_ = line
+	}
+
+	// Should trigger: bytes.Split by byte literal for iteration
+	for _, line := range bytes.Split(bs, []byte{'\n'}) { // want: "use for line := range bytes.Lines"
 		_ = line
 	}
 
@@ -23,6 +42,12 @@ func checkStringsSplitSeq(s string) {
 		_ = part
 	}
 
+	// Should trigger: bytes.Split by comma for iteration
+	bs := []byte(s)
+	for _, part := range bytes.Split(bs, []byte(",")) { // want: "use for part := range bytes.SplitSeq"
+		_ = part
+	}
+
 	// Should NOT trigger: newline split (caught by Lines rule instead)
 	// (the rule explicitly excludes \n separators)
 }
@@ -34,6 +59,12 @@ func checkStringsFieldsSeq(s string) {
 	for _, field := range strings.Fields(s) { // want: "use for field := range strings.FieldsSeq"
 		_ = field
 	}
+
+	// Should trigger: bytes.Fields for iteration
+	bs := []byte(s)
+	for _, field := range bytes.Fields(bs) { // want: "use for field := range bytes.FieldsSeq"
+		_ = field
+	}
 }
 
 // --- StringsFieldsFuncIteration ---
@@ -41,6 +72,12 @@ func checkStringsFieldsSeq(s string) {
 func checkStringsFieldsFuncSeq(s string) {
 	// Should trigger: FieldsFunc used for iteration
 	for _, field := range strings.FieldsFunc(s, func(r rune) bool { return r == ',' }) { // want: "use for field := range strings.FieldsFuncSeq"
+		_ = field
+	}
+
+	// Should trigger: bytes.FieldsFunc for iteration
+	bs := []byte(s)
+	for _, field := range bytes.FieldsFunc(bs, func(r rune) bool { return r == ',' }) { // want: "use for field := range bytes.FieldsFuncSeq"
 		_ = field
 	}
 }

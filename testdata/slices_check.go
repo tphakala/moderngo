@@ -60,12 +60,17 @@ func checkBytesClone() {
 func checkBackwardIteration() {
 	s := []int{1, 2, 3}
 
-	// Should trigger: standard reverse loop
+	// Should trigger: standard reverse loop (>= 0)
 	for i := len(s) - 1; i >= 0; i-- { // want: "use slices.Backward"
 		_ = s[i]
 	}
 
-	// Should NOT trigger: loop with different condition
+	// Should trigger: alternate reverse loop (> -1)
+	for i := len(s) - 1; i > -1; i-- { // want: "use slices.Backward"
+		_ = s[i]
+	}
+
+	// Should NOT trigger: loop with different condition (i > 0, skips index 0)
 	for i := len(s) - 1; i > 0; i-- {
 		_ = s[i]
 	}
@@ -82,6 +87,13 @@ func checkMapKeysCollection() {
 		keys = append(keys, k)
 	}
 	_ = keys
+
+	// Should trigger: key collection with underscore value
+	var keys2 []string
+	for k, _ := range m { // want: "use slices.Collect"
+		keys2 = append(keys2, k)
+	}
+	_ = keys2
 
 	// Should NOT trigger: loop does more than append
 	var filteredKeys []string

@@ -61,3 +61,17 @@ func BenchmarkOldLoop(b *testing.B) {
 		_ = i
 	}
 }
+
+func BenchmarkRangeN(b *testing.B) {
+	// Should trigger: range over b.N pattern (Go 1.22+ style)
+	for i := range b.N { // want: "use for b.Loop"
+		_ = i
+	}
+}
+
+func BenchmarkForRangeN(b *testing.B) {
+	// Should trigger: for range b.N with no variable
+	for range b.N { // want: "use for b.Loop"
+		_ = 42
+	}
+}

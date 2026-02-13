@@ -31,6 +31,12 @@ func checkClearBuiltin() {
 		delete(m, k)
 	}
 
+	// Should trigger: clearing loop with underscore value
+	m5 := map[string]int{"a": 1}
+	for k, _ := range m5 { // want: "use clear"
+		delete(m5, k)
+	}
+
 	// Should NOT trigger: loop that does more than just delete
 	m2 := map[string]int{"a": 1}
 	for k := range m2 {
@@ -82,6 +88,16 @@ func checkMinMaxBuiltin(a, b int) {
 
 	// Should trigger: int(math.Max(...))
 	_ = int(math.Max(float64(a), float64(b))) // want: "use max"
+
+	// Should trigger: int64 variants
+	a64, b64 := int64(a), int64(b)
+	_ = int64(math.Min(float64(a64), float64(b64))) // want: "use min"
+	_ = int64(math.Max(float64(a64), float64(b64))) // want: "use max"
+
+	// Should trigger: int32 variants
+	a32, b32 := int32(a), int32(b)
+	_ = int32(math.Min(float64(a32), float64(b32))) // want: "use min"
+	_ = int32(math.Max(float64(a32), float64(b32))) // want: "use max"
 
 	// Should NOT trigger: math.Min with actual floats
 	x, y := 1.5, 2.5

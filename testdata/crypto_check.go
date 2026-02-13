@@ -52,6 +52,14 @@ func checkElliptic() {
 	// Should trigger: deprecated elliptic.GenerateKey
 	_, _, _, _ = elliptic.GenerateKey(elliptic.P256(), rand.Reader) // want: "elliptic.GenerateKey is deprecated"
 
+	// Should trigger: deprecated elliptic.Marshal
+	x, y := elliptic.P256().Params().Gx, elliptic.P256().Params().Gy
+	_ = elliptic.Marshal(elliptic.P256(), x, y) // want: "elliptic.Marshal is deprecated"
+
+	// Should trigger: deprecated elliptic.Unmarshal
+	data := []byte{0x04}
+	_, _ = elliptic.Unmarshal(elliptic.P256(), data) // want: "elliptic.Unmarshal is deprecated"
+
 	// Should NOT trigger: getting a curve (not deprecated by our rules)
 	_ = elliptic.P256()
 }

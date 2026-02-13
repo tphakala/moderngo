@@ -30,6 +30,12 @@ func checkReverseProxyDirector() {
 			r.SetXForwarded()
 		},
 	}
+
+	// FALSE POSITIVE: $proxy.Director = $_ matches ANY .Director assignment,
+	// not just httputil.ReverseProxy. This fires on unrelated types.
+	type Movie struct{ Director string }
+	m := Movie{}
+	m.Director = "Spielberg" // want: "ReverseProxy.Director is deprecated"
 }
 
 // --- FilepathIsLocal (false-positive-prone) ---
